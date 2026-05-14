@@ -1,7 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { HiMenuAlt3 } from 'react-icons/hi';
 
 const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
+
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -11,8 +15,16 @@ const DashboardLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex">
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center z-50">
+        <h1 className="text-xl font-bold text-emerald-500">MoneyWavy</h1>
+
+        <button onClick={() => setIsOpen(!isOpen)}>
+          <HiMenuAlt3 size={28} />
+        </button>
+      </div>
+
       {/* Sidebar */}
-      <aside className="w-64 bg-zinc-900 border-r border-zinc-800 p-6 hidden md:block">
+      <aside className={`fixed md:static top-0 left-0 h-full w-64 bg-zinc-900 border-r border-zinc-800 p-6 z-50 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
         <h1 className="text-2xl font-bold text-emerald-500 mb-10">MoneyWavy</h1>
 
         <nav className="space-y-3">
@@ -35,7 +47,7 @@ const DashboardLayout = ({ children }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6">{children}</main>
+      <main className="flex-1 p-6 pt-24 md:pt-6">{children}</main>
     </div>
   );
 };

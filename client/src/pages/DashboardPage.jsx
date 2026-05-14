@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { getTransactions, createTransaction } from '../services/transactionService';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { deleteTransaction } from '../services/transactionService';
 import toast from 'react-hot-toast';
 
@@ -14,6 +14,10 @@ const DashboardPage = () => {
     type: 'expense',
     category: '',
   });
+
+  const [search, setSearch] = useState('');
+
+  const [filterType, setFilterType] = useState('all');
 
   const fetchTransactions = async () => {
     try {
@@ -75,6 +79,18 @@ const DashboardPage = () => {
 
   const balance = totalIncome - totalExpense;
 
+  const budgetLimit = 5000;
+
+  const isOverBudget = totalExpense > budgetLimit;
+
+  const filteredTransactions = transactions.filter((item) => {
+    const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase());
+
+    const matchesFilter = filterType === 'all' ? true : item.type === filterType;
+
+    return matchesSearch && matchesFilter;
+  });
+
   const chartData = [
     {
       name: 'Income',
@@ -85,6 +101,30 @@ const DashboardPage = () => {
       value: totalExpense,
     },
   ];
+
+  const monthlyData = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
+    const monthlyExpense = transactions
+      .filter((item) => {
+        const itemDate = new Date(item.date);
+
+        return item.type === 'expense' && itemDate.getMonth() === index;
+      })
+      .reduce((acc, item) => acc + item.amount, 0);
+
+    const monthlyIncome = transactions
+      .filter((item) => {
+        const itemDate = new Date(item.date);
+
+        return item.type === 'income' && itemDate.getMonth() === index;
+      })
+      .reduce((acc, item) => acc + item.amount, 0);
+
+    return {
+      month,
+      expense: monthlyExpense,
+      income: monthlyIncome,
+    };
+  });
 
   const COLORS = ['#10b981', '#ef4444'];
 
@@ -114,6 +154,8 @@ const DashboardPage = () => {
           </div>
         </div>
 
+        {isOverBudget && <div className="bg-red-500/20 border border-red-500 text-red-400 p-4 rounded-2xl mb-8">⚠️ Warning: You have exceeded your monthly budget limit.</div>}
+
         <div className="bg-zinc-900 p-6 rounded-2xl mb-8">
           <h2 className="text-2xl font-bold mb-5">Financial Analytics</h2>
 
@@ -129,6 +171,26 @@ const DashboardPage = () => {
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
+          </div>
+          <div className="bg-zinc-900 p-6 rounded-2xl mb-8">
+            <h2 className="text-2xl font-bold mb-5">Monthly Expenses</h2>
+
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+
+                  <XAxis dataKey="month" />
+
+                  <YAxis />
+
+                  <Tooltip />
+
+                  <Line type="monotone" dataKey="expense" stroke="#10b981" strokeWidth={3} />
+                  <Line type="monotone" dataKey="income" stroke="#3b82f6" strokeWidth={3} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
@@ -151,12 +213,26 @@ const DashboardPage = () => {
           </button>
         </form>
 
+        <div className="bg-zinc-900 p-6 rounded-2xl mb-8">
+          <div className="flex flex-col md:flex-row gap-4">
+            <input type="text" placeholder="Search transaction..." value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 p-3 rounded-lg bg-zinc-800 outline-none" />
+
+            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="p-3 rounded-lg bg-zinc-800 outline-none">
+              <option value="all">All</option>
+
+              <option value="income">Income</option>
+
+              <option value="expense">Expense</option>
+            </select>
+          </div>
+        </div>
+
         {/* Transaction List */}
         <div className="bg-zinc-900 rounded-2xl p-6">
           <h2 className="text-2xl font-bold mb-5">Recent Transactions</h2>
 
           <div className="space-y-4">
-            {transactions.map((item) => (
+            {filteredTransactions.map((item) => (
               <div key={item._id} className="bg-zinc-800 p-4 rounded-xl flex justify-between items-center">
                 <div>
                   <h3 className="font-semibold">{item.title}</h3>
