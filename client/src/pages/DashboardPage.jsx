@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { getTransactions, createTransaction } from '../services/transactionService';
-
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { deleteTransaction } from '../services/transactionService';
 import toast from 'react-hot-toast';
 
 const DashboardPage = () => {
@@ -56,11 +57,36 @@ const DashboardPage = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await deleteTransaction(id);
+
+      toast.success('Transaction deleted');
+
+      fetchTransactions();
+    } catch (error) {
+      toast.error('Failed to delete transaction');
+    }
+  };
+
   const totalIncome = transactions.filter((t) => t.type === 'income').reduce((acc, item) => acc + item.amount, 0);
 
   const totalExpense = transactions.filter((t) => t.type === 'expense').reduce((acc, item) => acc + item.amount, 0);
 
   const balance = totalIncome - totalExpense;
+
+  const chartData = [
+    {
+      name: 'Income',
+      value: totalIncome,
+    },
+    {
+      name: 'Expense',
+      value: totalExpense,
+    },
+  ];
+
+  const COLORS = ['#10b981', '#ef4444'];
 
   return (
     <DashboardLayout>
@@ -85,6 +111,24 @@ const DashboardPage = () => {
             <h2 className="text-zinc-400">Expense</h2>
 
             <p className="text-3xl font-bold mt-2 text-red-500">${totalExpense}</p>
+          </div>
+        </div>
+
+        <div className="bg-zinc-900 p-6 rounded-2xl mb-8">
+          <h2 className="text-2xl font-bold mb-5">Financial Analytics</h2>
+
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={chartData} dataKey="value" outerRadius={120} label>
+                  {chartData.map((entry, index) => (
+                    <Cell key={index} fill={COLORS[index]} />
+                  ))}
+                </Pie>
+
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -120,9 +164,15 @@ const DashboardPage = () => {
                   <p className="text-zinc-400 text-sm">{item.category}</p>
                 </div>
 
-                <p className={`font-bold ${item.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {item.type === 'income' ? '+' : '-'}${item.amount}
-                </p>
+                <div className="flex items-center gap-4">
+                  <p className={`font-bold ${item.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {item.type === 'income' ? '+' : '-'}${item.amount}
+                  </p>
+
+                  <button onClick={() => handleDelete(item._id)} className="bg-red-500 hover:bg-red-600 transition px-3 py-1 rounded-lg text-sm">
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>

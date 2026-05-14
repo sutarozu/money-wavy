@@ -27,3 +27,13 @@ export const createTransaction = async (transactionData) => {
 
   return response.data;
 };
+
+export const deleteTransaction = async (id) => {
+  const response = await axios.delete(`${API_URL}/${id}`, {
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+
+  return response.data;
+};
