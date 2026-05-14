@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
-import { getTransactions, createTransaction } from '../services/transactionService';
+import { createTransaction, getTransactions, updateTransaction, deleteTransaction } from '../services/transactionService';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { deleteTransaction } from '../services/transactionService';
 import toast from 'react-hot-toast';
 import formatCurrency from '../utils/formatCurrency';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const DashboardPage = () => {
   const [transactions, setTransactions] = useState([]);
+
+  const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -45,9 +48,17 @@ const DashboardPage = () => {
     e.preventDefault();
 
     try {
-      await createTransaction(formData);
+      if (editingId) {
+        await updateTransaction(editingId, formData);
 
-      toast.success('Transaction added');
+        toast.success('Transaction updated');
+
+        setEditingId(null);
+      } else {
+        await createTransaction(formData);
+
+        toast.success('Transaction added');
+      }
 
       setFormData({
         title: '',
@@ -74,13 +85,54 @@ const DashboardPage = () => {
     }
   };
 
+  const handleEdit = (item) => {
+    setEditingId(item._id);
+
+    setFormData({
+      title: item.title,
+      amount: item.amount,
+      type: item.type,
+      category: item.category,
+    });
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    doc.setFontSize(20);
+
+    doc.text(`${user?.user?.name} Financial Report`, 14, 20);
+
+    doc.setFontSize(12);
+
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 30);
+
+    doc.text(`Balance: ${formatCurrency(balance)}`, 14, 40);
+
+    doc.text(`Income: ${formatCurrency(totalIncome)}`, 14, 48);
+
+    doc.text(`Expense: ${formatCurrency(totalExpense)}`, 14, 56);
+
+    const tableData = transactions.map((item) => [item.title, item.category, item.type, formatCurrency(item.amount)]);
+
+    autoTable(doc, {
+      startY: 70,
+      head: [['Title', 'Category', 'Type', 'Amount']],
+      body: tableData,
+    });
+
+    doc.save(`${user?.user?.name}-financial-report.pdf`);
+  };
+
   const totalIncome = transactions.filter((t) => t.type === 'income').reduce((acc, item) => acc + item.amount, 0);
 
   const totalExpense = transactions.filter((t) => t.type === 'expense').reduce((acc, item) => acc + item.amount, 0);
 
   const balance = totalIncome - totalExpense;
 
-  const budgetLimit = 5000;
+  const budgetLimit = 1000000;
 
   const isOverBudget = totalExpense > budgetLimit;
 
@@ -151,7 +203,7 @@ const DashboardPage = () => {
           <div className="bg-zinc-900 p-5 rounded-2xl">
             <h2 className="text-zinc-400">Expense</h2>
 
-            <p className="text-3xl font-bold mt-2 text-red-500">{formatCurrency(totalIncome)}</p>
+            <p className="text-3xl font-bold mt-2 text-red-500">{formatCurrency(totalExpense)}</p>
           </div>
         </div>
 
@@ -228,6 +280,12 @@ const DashboardPage = () => {
           </div>
         </div>
 
+        <div className="flex justify-end mb-4">
+          <button onClick={exportPDF} className="bg-emerald-500 hover:bg-emerald-600 transition px-5 py-3 rounded-lg">
+            Export PDF
+          </button>
+        </div>
+
         {/* Transaction List */}
         <div className="bg-zinc-900 rounded-2xl p-6">
           <h2 className="text-2xl font-bold mb-5">Recent Transactions</h2>
@@ -249,6 +307,9 @@ const DashboardPage = () => {
 
                   <button onClick={() => handleDelete(item._id)} className="bg-red-500 hover:bg-red-600 transition px-3 py-1 rounded-lg text-sm">
                     Delete
+                  </button>
+                  <button onClick={() => handleEdit(item)} className="bg-blue-500 hover:bg-blue-600 transition px-3 py-1 rounded-lg text-sm">
+                    Edit
                   </button>
                 </div>
               </div>
