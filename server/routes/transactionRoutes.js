@@ -71,4 +71,33 @@ router.delete('/:id', protect, async (req, res) => {
   }
 });
 
+// EDIT Transactions
+router.put('/:id', protect, async (req, res) => {
+  try {
+    const transaction = await Transaction.findById(req.params.id);
+
+    if (!transaction) {
+      return res.status(404).json({
+        message: 'Transaction not found',
+      });
+    }
+
+    if (transaction.userId.toString() !== req.user.id) {
+      return res.status(401).json({
+        message: 'Not authorized',
+      });
+    }
+
+    const updatedTransaction = await Transaction.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+
+    res.json(updatedTransaction);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;
