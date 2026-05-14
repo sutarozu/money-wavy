@@ -4,6 +4,7 @@ import { getTransactions, createTransaction } from '../services/transactionServi
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { deleteTransaction } from '../services/transactionService';
 import toast from 'react-hot-toast';
+import formatCurrency from '../utils/formatCurrency';
 
 const DashboardPage = () => {
   const [transactions, setTransactions] = useState([]);
@@ -138,19 +139,19 @@ const DashboardPage = () => {
           <div className="bg-zinc-900 p-5 rounded-2xl">
             <h2 className="text-zinc-400">Balance</h2>
 
-            <p className="text-3xl font-bold mt-2">${balance}</p>
+            <p className="text-3xl font-bold mt-2">{formatCurrency(balance)}</p>
           </div>
 
           <div className="bg-zinc-900 p-5 rounded-2xl">
             <h2 className="text-zinc-400">Income</h2>
 
-            <p className="text-3xl font-bold mt-2 text-emerald-500">${totalIncome}</p>
+            <p className="text-3xl font-bold mt-2 text-emerald-500">{formatCurrency(totalIncome)}</p>
           </div>
 
           <div className="bg-zinc-900 p-5 rounded-2xl">
             <h2 className="text-zinc-400">Expense</h2>
 
-            <p className="text-3xl font-bold mt-2 text-red-500">${totalExpense}</p>
+            <p className="text-3xl font-bold mt-2 text-red-500">{formatCurrency(totalIncome)}</p>
           </div>
         </div>
 
@@ -242,7 +243,8 @@ const DashboardPage = () => {
 
                 <div className="flex items-center gap-4">
                   <p className={`font-bold ${item.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {item.type === 'income' ? '+' : '-'}${item.amount}
+                    {item.type === 'income' ? '+' : '-'}
+                    {formatCurrency(item.amount)}
                   </p>
 
                   <button onClick={() => handleDelete(item._id)} className="bg-red-500 hover:bg-red-600 transition px-3 py-1 rounded-lg text-sm">
