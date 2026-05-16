@@ -15,11 +15,12 @@ await connectDB();
 
 app.use(
   cors({
-    origin: 'https://moneywavy.vercel.app',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: ['https://moneywavy.vercel.app', 'http://localhost:5173'],
     credentials: true,
   }),
 );
+
+app.options('*', cors());
 
 app.use(express.json());
 
