@@ -12,12 +12,9 @@ const app = express();
 
 app.use(
   cors({
-    origin: ['https://moneywavy.vercel.app', 'http://localhost:5173'],
-    credentials: true,
+    origin: '*',
   }),
 );
-
-app.options('*', cors());
 
 app.use(express.json());
 
@@ -25,6 +22,10 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB Connected'))
   .catch((err) => console.log(err));
+
+app.get('/', (req, res) => {
+  res.send('API Running...');
+});
 
 app.use('/api/users', authRoutes);
 
