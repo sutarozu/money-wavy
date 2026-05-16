@@ -20,5 +20,3 @@ mongoose
   .connect(process.env.MONGO_URI, { family: 4 })
   .then(() => console.log('MONGODB_Connected!'))
   .catch((err) => console.log(err));
-
-const PORT = process.env.PORT || 5000;
