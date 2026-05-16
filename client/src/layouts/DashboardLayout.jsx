@@ -31,14 +31,6 @@ const DashboardLayout = ({ children }) => {
           <Link to="/" className="block p-3 rounded-lg hover:bg-zinc-800 transition">
             Dashboard
           </Link>
-
-          <Link to="/transactions" className="block p-3 rounded-lg hover:bg-zinc-800 transition">
-            Transactions
-          </Link>
-
-          <Link to="/analytics" className="block p-3 rounded-lg hover:bg-zinc-800 transition">
-            Analytics
-          </Link>
         </nav>
 
         <button onClick={handleLogout} className="mt-10 w-full bg-red-500 hover:bg-red-600 transition p-3 rounded-lg">

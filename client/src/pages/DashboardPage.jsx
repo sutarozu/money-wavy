@@ -6,6 +6,9 @@ import toast from 'react-hot-toast';
 import formatCurrency from '../utils/formatCurrency';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { isToday, isThisWeek, isThisMonth } from 'date-fns';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const DashboardPage = () => {
   const [transactions, setTransactions] = useState([]);
@@ -22,6 +25,8 @@ const DashboardPage = () => {
   const [search, setSearch] = useState('');
 
   const [filterType, setFilterType] = useState('all');
+
+  const [reportType, setReportType] = useState('all');
 
   const fetchTransactions = async () => {
     try {
@@ -101,21 +106,27 @@ const DashboardPage = () => {
 
     const user = JSON.parse(localStorage.getItem('user'));
 
+    const reportTitle = reportType === 'daily' ? 'Daily Report' : reportType === 'weekly' ? 'Weekly Report' : reportType === 'monthly' ? 'Monthly Report' : 'Full Report';
+
     doc.setFontSize(20);
 
-    doc.text(`${user?.user?.name} Financial Report`, 14, 20);
+    doc.text(`${user?.user?.name} ${reportTitle}`, 14, 20);
 
     doc.setFontSize(12);
 
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 30);
 
-    doc.text(`Balance: ${formatCurrency(balance)}`, 14, 40);
+    const totalIncome = reportTransactions.filter((item) => item.type === 'income').reduce((acc, item) => acc + item.amount, 0);
 
-    doc.text(`Income: ${formatCurrency(totalIncome)}`, 14, 48);
+    const totalExpense = reportTransactions.filter((item) => item.type === 'expense').reduce((acc, item) => acc + item.amount, 0);
 
-    doc.text(`Expense: ${formatCurrency(totalExpense)}`, 14, 56);
+    doc.text(`Income: ${formatCurrency(totalIncome)}`, 14, 40);
 
-    const tableData = transactions.map((item) => [item.title, item.category, item.type, formatCurrency(item.amount)]);
+    doc.text(`Expense: ${formatCurrency(totalExpense)}`, 14, 48);
+
+    doc.text(`Balance: ${formatCurrency(totalIncome - totalExpense)}`, 14, 56);
+
+    const tableData = reportTransactions.map((item) => [item.title, item.category, item.type, formatCurrency(item.amount)]);
 
     autoTable(doc, {
       startY: 70,
@@ -123,7 +134,34 @@ const DashboardPage = () => {
       body: tableData,
     });
 
-    doc.save(`${user?.user?.name}-financial-report.pdf`);
+    doc.save(`${reportTitle.toLowerCase()}-report.pdf`);
+  };
+
+  const exportExcel = () => {
+    const excelData = reportTransactions.map((item) => ({
+      Title: item.title,
+      Category: item.category,
+      Type: item.type,
+      Amount: item.amount,
+      Date: new Date(item.date).toLocaleDateString(),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array',
+    });
+
+    const fileData = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+    });
+
+    saveAs(fileData, `${reportType}-report.xlsx`);
   };
 
   const totalIncome = transactions.filter((t) => t.type === 'income').reduce((acc, item) => acc + item.amount, 0);
@@ -131,6 +169,15 @@ const DashboardPage = () => {
   const totalExpense = transactions.filter((t) => t.type === 'expense').reduce((acc, item) => acc + item.amount, 0);
 
   const balance = totalIncome - totalExpense;
+
+  const dailyIncome = transactions.filter((item) => item.type === 'income' && isToday(new Date(item.date))).reduce((acc, item) => acc + item.amount, 0);
+  const dailyExpense = transactions.filter((item) => item.type === 'expense' && isToday(new Date(item.date))).reduce((acc, item) => acc + item.amount, 0);
+
+  const weeklyIncome = transactions.filter((item) => item.type === 'income' && isThisWeek(new Date(item.date))).reduce((acc, item) => acc + item.amount, 0);
+  const weeklyExpense = transactions.filter((item) => item.type === 'expense' && isThisWeek(new Date(item.date))).reduce((acc, item) => acc + item.amount, 0);
+
+  const monthlyIncome = transactions.filter((item) => item.type === 'income' && isThisMonth(new Date(item.date))).reduce((acc, item) => acc + item.amount, 0);
+  const monthlyExpense = transactions.filter((item) => item.type === 'expense' && isThisMonth(new Date(item.date))).reduce((acc, item) => acc + item.amount, 0);
 
   const budgetLimit = 1000000;
 
@@ -142,6 +189,24 @@ const DashboardPage = () => {
     const matchesFilter = filterType === 'all' ? true : item.type === filterType;
 
     return matchesSearch && matchesFilter;
+  });
+
+  const reportTransactions = transactions.filter((item) => {
+    const itemDate = new Date(item.date);
+
+    if (reportType === 'daily') {
+      return isToday(itemDate);
+    }
+
+    if (reportType === 'weekly') {
+      return isThisWeek(itemDate);
+    }
+
+    if (reportType === 'monthly') {
+      return isThisMonth(itemDate);
+    }
+
+    return true;
   });
 
   const chartData = [
@@ -204,6 +269,41 @@ const DashboardPage = () => {
             <h2 className="text-zinc-400">Expense</h2>
 
             <p className="text-3xl font-bold mt-2 text-red-500">{formatCurrency(totalExpense)}</p>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-4 mb-8">
+          {/* Daily */}
+          <div className="bg-zinc-900 p-5 rounded-2xl">
+            <h2 className="text-lg font-semibold mb-4">Daily Overview</h2>
+
+            <div className="space-y-2">
+              <p className="text-emerald-500">Income: {formatCurrency(dailyIncome)}</p>
+
+              <p className="text-red-500">Expense: {formatCurrency(dailyExpense)}</p>
+            </div>
+          </div>
+
+          {/* Weekly */}
+          <div className="bg-zinc-900 p-5 rounded-2xl">
+            <h2 className="text-lg font-semibold mb-4">Weekly Overview</h2>
+
+            <div className="space-y-2">
+              <p className="text-emerald-500">Income: {formatCurrency(weeklyIncome)}</p>
+
+              <p className="text-red-500">Expense: {formatCurrency(weeklyExpense)}</p>
+            </div>
+          </div>
+
+          {/* Monthly */}
+          <div className="bg-zinc-900 p-5 rounded-2xl">
+            <h2 className="text-lg font-semibold mb-4">Monthly Overview</h2>
+
+            <div className="space-y-2">
+              <p className="text-emerald-500">Income: {formatCurrency(monthlyIncome)}</p>
+
+              <p className="text-red-500">Expense: {formatCurrency(monthlyExpense)}</p>
+            </div>
           </div>
         </div>
 
@@ -280,9 +380,23 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        <div className="flex justify-end mb-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-3 mb-4">
+          <select value={reportType} onChange={(e) => setReportType(e.target.value)} className="bg-zinc-800 px-5 py-3 rounded-lg outline-none">
+            <option value="all">Full Report</option>
+
+            <option value="daily">Daily Report</option>
+
+            <option value="weekly">Weekly Report</option>
+
+            <option value="monthly">Monthly Report</option>
+          </select>
+
           <button onClick={exportPDF} className="bg-emerald-500 hover:bg-emerald-600 transition px-5 py-3 rounded-lg">
             Export PDF
+          </button>
+
+          <button onClick={exportExcel} className="bg-blue-500 hover:bg-blue-600 transition px-5 py-3 rounded-lg">
+            Export Excel
           </button>
         </div>
 
