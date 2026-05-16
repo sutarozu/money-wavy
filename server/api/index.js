@@ -1,10 +1,10 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import cors from 'cors';
-import dotenv from 'dotenv';
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const dotenv = require('dotenv');
 
-import authRoutes from '../routes/authRoutes.js';
-import transactionRoutes from '../routes/transactionRoutes.js';
+const authRoutes = require('../routes/authRoutes');
+const transactionRoutes = require('../routes/transactionRoutes');
 
 dotenv.config();
 
@@ -19,9 +19,7 @@ app.use(
 app.use(express.json());
 
 if (mongoose.connection.readyState !== 1) {
-  mongoose.connect(process.env.MONGO_URI, {
-    dbName: 'test',
-  });
+  mongoose.connect(process.env.MONGO_URI);
 }
 
 app.get('/', (req, res) => {
@@ -32,4 +30,4 @@ app.use('/api/users', authRoutes);
 
 app.use('/api/transactions', transactionRoutes);
 
-export default app;
+module.exports = app;
