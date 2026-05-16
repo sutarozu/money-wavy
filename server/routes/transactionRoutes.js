@@ -23,8 +23,6 @@ router.get('/', protect, async (req, res) => {
 
 // CREATE Transaction
 router.post('/', protect, async (req, res) => {
-  console.log(req.user);
-  console.log(req.body);
   try {
     const { title, amount, type, category } = req.body;
 
