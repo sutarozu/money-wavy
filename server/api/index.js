@@ -13,7 +13,13 @@ const app = express();
 
 await connectDB();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: 'https://moneywavy.vercel.app',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+  }),
+);
 
 app.use(express.json());
 
