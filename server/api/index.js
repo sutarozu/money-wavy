@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-import userRoutes from '../routes/userRoutes.js';
+import userRoutes from '../routes/authRoutes.js';
 import transactionRoutes from '../routes/transactionRoutes.js';
 
 dotenv.config();
@@ -15,7 +15,7 @@ app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI);
 
-app.use('/api/users', userRoutes);
+app.use('/api/users', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 
 export default app;

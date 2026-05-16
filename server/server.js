@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
-import cors from 'cors';
 require('dotenv').config();
 
 const app = express();
